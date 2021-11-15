@@ -11,6 +11,7 @@ fibLista n =  lista !! fromIntegral n
 
 fibHelper :: Integral a => Int -> Int -> [a] -> a
 fibHelper n c lst
+    | n == 0 = 0
     | n + 1 == c = lst !! n
     | otherwise = fibHelper n (c + 1) (lst ++ [last lst + last (init lst)])
 
