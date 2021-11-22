@@ -1,3 +1,5 @@
+module BigNumber (BigNumber(Empty, BN), zeroBN, oneBN, twoBN, somaBN, subBN, mulBN, divBN, scanner, output, equalsBN, bigNumberToInt) where
+
 import Data.Text.Internal.Read (digitToInt)
 import Data.Char (chr, ord)
 
@@ -15,6 +17,9 @@ zeroBN = BN Empty 0
 
 oneBN :: BigNumber
 oneBN = BN Empty 1
+
+twoBN :: BigNumber
+twoBN = BN Empty 2
 
 minusBNHelper :: BigNumber -> BigNumber
 minusBNHelper (BN Empty x) = BN Empty (-x)
@@ -144,6 +149,7 @@ mulBN x y
 equalsBN :: BigNumber -> BigNumber -> Bool
 equalsBN Empty Empty = True;
 equalsBN (BN xs x) (BN ys y)
+    | lengthBN (BN xs x) /= lengthBN (BN ys y) = False
     | x /= y = False
     | otherwise = equalsBN xs ys
 
@@ -156,12 +162,16 @@ lesserOrEqualsBN x y = not (x `greaterBN` y) || x `equalsBN` y
 baseDivBN :: BigNumber -> BigNumber -> BigNumber -> (BigNumber, BigNumber)
 baseDivBN x y q
     | mulBN y q `greaterBN` x = (subBN q oneBN, subBN x (mulBN y (subBN q oneBN)))
-    | otherwise = baseDivBN x y (somaBN q oneBN) 
+    | otherwise = baseDivBN x y (somaBN q oneBN)
 
 divBNHelper :: BigNumber -> BigNumber -> BigNumber -> BigNumber -> (BigNumber, BigNumber)
 divBNHelper Empty _ q r = (q, r)
-divBNHelper x y q r = divBNHelper (tailBN x) y (removeLeadingZeros (BN q q_div)) (removeLeadingZeros r_div) 
+divBNHelper x y q r = divBNHelper (tailBN x) y (removeLeadingZeros (BN q q_div)) (removeLeadingZeros r_div)
     where (BN _ q_div, r_div) = baseDivBN (removeLeadingZeros (BN r (firstBN x))) y oneBN
 
 divBN :: BigNumber -> BigNumber -> (BigNumber, BigNumber)
 divBN x y = divBNHelper x y zeroBN zeroBN
+
+bigNumberToInt :: BigNumber -> Int
+bigNumberToInt (BN Empty x) = x
+bigNumberToInt (BN xs x) = bigNumberToInt xs * 10 + x

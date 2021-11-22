@@ -1,3 +1,5 @@
+import BigNumber ( BigNumber, oneBN, twoBN, somaBN, subBN, equalsBN, zeroBN, scanner, output, bigNumberToInt)
+
 fibRec :: (Integral a) => a -> a
 fibRec 0 = 0
 fibRec 1 = 1
@@ -21,3 +23,17 @@ fibLista' n = fibHelper n 2 [0, 1]
 fibListaInfinita :: (Integral a) => a -> a
 fibListaInfinita n = lista !! fromIntegral n
     where lista = 0 : 1 : zipWith (+) lista (tail lista)
+
+fibRecBN :: BigNumber -> BigNumber
+fibRecBN n
+    |n `equalsBN` zeroBN = zeroBN
+    |n `equalsBN` oneBN = oneBN
+    |otherwise = fibRecBN(n `subBN` twoBN) `somaBN` fibRecBN(n `subBN` oneBN)
+
+fibListaBN :: BigNumber -> BigNumber
+fibListaBN n = lista !! bigNumberToInt n
+    where lista = zeroBN : oneBN : [(lista !! (x - 2)) `somaBN` (lista !! (x - 1)) | x <- [2.. (bigNumberToInt n)]]
+
+fibListaInfinitaBN :: BigNumber -> BigNumber
+fibListaInfinitaBN n = lista !! bigNumberToInt n
+    where lista = zeroBN : oneBN : zipWith somaBN lista (tail lista)
