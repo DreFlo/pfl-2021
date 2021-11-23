@@ -1,0 +1,11 @@
+fib INT = 7540113804746346429
+
+timeout (60*10^6) (print (fst (head (filter (\(x, y) -> x < 0) (zip (map fibListaInfinita [0::Integer ..]) [0 ..] )))))
+
+lista = zeroBN : [last lista `somaBN` oneBN]
+
+x = head (filter (\(x, y) -> not (x `greaterOrEqualsBN` zeroBN)) (zip (map fibListaInfinitaBN lista) [0 ..]))
+
+z = timeout (60*10^6) (print (fst x))
+
+22 sara st andre end testes + explicaçao

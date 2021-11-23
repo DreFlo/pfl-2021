@@ -1,4 +1,4 @@
-module BigNumber (BigNumber, zeroBN, oneBN, twoBN, somaBN, subBN, mulBN, divBN, scanner, output, equalsBN, bigNumberToInt, safeDivBN) where
+module BigNumber (BigNumber, zeroBN, oneBN, twoBN, somaBN, subBN, mulBN, divBN, scanner, output, equalsBN, bigNumberToInt, safeDivBN, lesserOrEqualsBN, greaterOrEqualsBN) where
 
 import Data.Text.Internal.Read (digitToInt)
 import Data.Char (chr, ord)
