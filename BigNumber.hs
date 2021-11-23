@@ -1,4 +1,4 @@
-module BigNumber (BigNumber(Empty, BN), zeroBN, oneBN, twoBN, somaBN, subBN, mulBN, divBN, scanner, output, equalsBN, bigNumberToInt) where
+module BigNumber (BigNumber, zeroBN, oneBN, twoBN, somaBN, subBN, mulBN, divBN, scanner, output, equalsBN, bigNumberToInt, safeDivBN) where
 
 import Data.Text.Internal.Read (digitToInt)
 import Data.Char (chr, ord)
@@ -175,3 +175,8 @@ divBN x y = divBNHelper x y zeroBN zeroBN
 bigNumberToInt :: BigNumber -> Int
 bigNumberToInt (BN Empty x) = x
 bigNumberToInt (BN xs x) = bigNumberToInt xs * 10 + x
+
+safeDivBN :: BigNumber -> BigNumber -> Maybe (BigNumber, BigNumber)
+safeDivBN x y 
+    | y `equalsBN` zeroBN = Nothing 
+    | otherwise = Just (divBN x y)
