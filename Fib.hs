@@ -1,4 +1,4 @@
-import BigNumber ( BigNumber, oneBN, twoBN, somaBN, subBN, equalsBN, zeroBN, scanner, output, bigNumberToInt)
+import BigNumber (BigNumber, oneBN, twoBN, somaBN, subBN, equalsBN, zeroBN, scanner, output, bigNumberToInt, lesserOrEqualsBN, greaterOrEqualsBN)
 
 fibRec :: (Integral a) => a -> a
 fibRec 0 = 0
