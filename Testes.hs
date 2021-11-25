@@ -2,6 +2,12 @@
 
 --Andre
 
+-- somaPosBN
+
+-- output (somaPosBN (scanner "1") (scanner "0"))
+-- output (somaPosBN (scanner "1") (scanner "1"))
+-- output (somaPosBN (scanner "0") (scanner "1"))
+
 -- somaBN
 
 -- output (somaBN (scanner "1") (scanner "0"))

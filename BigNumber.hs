@@ -63,13 +63,21 @@ output (BN Empty x)
 output (BN xs x) = output xs ++ [chr (x + ord '0')]
 
 somaPosBN :: BigNumber -> BigNumber -> BigNumber
+-- Last digit of a BN
 somaPosBN (BN Empty x) (BN Empty y)
+    -- Result is a single digit BN
     | x + y < 10 = BN Empty (x + y)
+    -- result is a two digit BN
     | otherwise = BN (BN Empty ((x + y) `div` 10)) ((x + y) `mod` 10)
+-- If left BN has run out of digits add a left 0 and run again
 somaPosBN x (BN Empty y) = somaPosBN x (BN zeroBN y)
+-- If right BN has run out of digits add a left 0 and run again
 somaPosBN (BN Empty x) y = somaPosBN (BN zeroBN x) y
+-- Recursive case
 somaPosBN (BN xs x) (BN ys y)
+    -- No carry is needed
     | x + y < 10 = BN (somaPosBN xs ys) (x + y)
+    -- If carry is needed
     | otherwise = BN (somaPosBN (BN headBN (nextBN + ((x + y) `div` 10))) ys) ((x + y) `mod` 10)
     where (BN headBN nextBN) = xs
 
