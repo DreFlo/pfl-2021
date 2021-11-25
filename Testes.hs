@@ -36,6 +36,52 @@ output (fibListaBN (scanner "5"))
 output (fibListaInfinitaBN (scanner "8"))
 output (fibListaInfinitaBN (scanner "5"))
 
+--isNegative :: BigNumber -> Bool
+isNegative (scanner "12")
+isNegative (scanner "0")
+isNegative (scanner "-12")
+
+--isPositive :: BigNumber -> Bool
+isPositive (scanner "12")
+isPositive (scanner "0") -- > ??
+isPositive (scanner "-12")
+
+--FALTA
+--minusBNHelper :: BigNumber -> BigNumber
+output (minusBNHelper (scanner "-12"))
+
+--removeLeadingZeros :: BigNumber -> BigNumber
+output (removeLeadingZeros (scanner "000012"))
+output (removeLeadingZeros (scanner "100002"))
+output (removeLeadingZeros (scanner "120000"))
+
+--minusBN :: BigNumber -> BigNumber
+output (minusBN (scanner "-12"))
+output (minusBN (scanner "12"))
+
+--firstBN :: BigNumber -> Int
+firstBN (scanner "-12")
+firstBN (scanner "12")
+
+--tailBN :: BigNumber -> BigNumber
+output (tailBN (scanner "1245"))
+output (tailBN (scanner "12"))
+
+--paddBN :: BigNumber -> BigNumber -> BigNumber
+output (paddBN (scanner "12") (scanner "123"))
+output (paddBN (scanner "12") (scanner "12367"))
+output (paddBN (scanner "12") (scanner "1")) -- > este caso dá erro
+
+--FALTA
+--scannerHelper :: String  -> BigNumber
+output (scannerHelper (scanner "-12"))
+
+--scanner :: String -> BigNumber
+output (scanner "-12")
+output (scanner "12")
+
+--testes do output estão incluidos nos outros testes
+
 --Andre
 
 -- somaPosBN
