@@ -74,6 +74,7 @@ somaPosBN (BN xs x) (BN ys y)
     where (BN headBN nextBN) = xs
 
 somaBN :: BigNumber -> BigNumber -> BigNumber
+-- Transform into equivalent sum with positive numbers
 somaBN x y
     | isPositive x && isPositive y = removeLeadingZeros (somaPosBN x y)
     | isNegative x && isNegative y = removeLeadingZeros (minusBN (somaPosBN (minusBN x) (minusBN y)))
@@ -81,13 +82,21 @@ somaBN x y
     | otherwise = removeLeadingZeros (subBN y (minusBN x))
 
 orderedSubPosBN :: BigNumber -> BigNumber -> BigNumber
+-- Last digit of a BigNumber
 orderedSubPosBN (BN Empty x) (BN Empty y)
+    -- Result is a single digit BigNumber
     | abs (x - y) < 10 = BN Empty (x - y)
+    -- Result is two digit BigNumber
     | otherwise = BN (BN Empty ((x - y) `div` 10)) ((x - y) `mod` 10)
+-- If left BN has run out of digits add a left 0 and run again
 orderedSubPosBN x (BN Empty y) = orderedSubPosBN x (BN zeroBN y)
+-- If right BN has run out of digits add a left 0 and run again
 orderedSubPosBN (BN Empty x) y = orderedSubPosBN (BN zeroBN x) y
+-- Recursive case
 orderedSubPosBN (BN xs x) (BN ys y)
+    -- No carry is needed
     | x >= y = BN (orderedSubPosBN xs ys) (x - y)
+    -- If carry is needed remove 1 from xs and add 10 to x
     | x < y = BN (orderedSubPosBN (BN headBN (nextBN - 1)) ys) (10 + x - y)
     where (BN headBN nextBN) = xs
 
@@ -108,11 +117,13 @@ greaterBN x y
     | lengthBN x == lengthBN y = greaterEqualLengthBN x y
     | lengthBN x > lengthBN y = greaterEqualLengthBN x (paddBN y x)
 
+-- If y > x do - (y - x)
 subBNHelper :: BigNumber -> BigNumber -> BigNumber
 subBNHelper x y
-    | greaterBN y x = minusBN (orderedSubPosBN y x)
+    | y `greaterBN` x = minusBN (orderedSubPosBN y x)
     | otherwise = orderedSubPosBN x y
 
+-- Change subtraction to equivalent with positive numbers
 subBN :: BigNumber -> BigNumber -> BigNumber
 subBN x y
     | isPositive x && isPositive y = removeLeadingZeros (subBNHelper x y)
@@ -120,26 +131,34 @@ subBN x y
     | isNegative x && isPositive y = removeLeadingZeros (minusBN (somaBN (minusBN x) y))
     | otherwise = removeLeadingZeros (somaBN (minusBN y) x)
 
+-- Equivalent to x * 10^n
 eBN :: BigNumber -> Int -> BigNumber
 eBN x 0 = x;
-eBN x n = BN (eBN x (n - 1)) 0
+eBN x n = removeLeadingZeros (BN (eBN x (n - 1)) 0)
 
+-- Equivalent to (x * 10^ex) * (y * 10^ey)
 baseMulBN :: BigNumber -> BigNumber -> Int -> Int -> BigNumber
 baseMulBN (BN Empty x) (BN Empty y) ex ey
+    -- Result of x * y is a single digit number
     | x * y < 10 = BN Empty (x * y) `eBN` (ex + ey)
+    -- Result of x * y is a two digit number
     | otherwise = BN (BN Empty ((x * y) `div` 10)) ((x * y) `mod` 10) `eBN` (ex + ey)
 
+-- Get the n-th digit of a BigNumber, counting from the right and starting at 0
 digitOrdBN :: BigNumber -> Int -> BigNumber
 digitOrdBN (BN _ x) 0 = BN Empty x
 digitOrdBN (BN xs _) n = digitOrdBN xs (n - 1)
 
+-- Create a list of all the smaller multiplications of a multi-digit multiplication that add together into the result
 mulListBN :: BigNumber -> BigNumber -> [BigNumber]
-mulListBN x y = [baseMulBN (digitOrdBN x xn) (digitOrdBN y yn) xn yn | xn <- [0 .. lengthBN x - 1], yn <- [0 .. lengthBN y - 1]]
+mulListBN x y = [baseMulBN (digitOrdBN x xn) (digitOrdBN y yn) xn yn | yn <- [0 .. lengthBN y - 1], xn <- [0 .. lengthBN x - 1]]
 
+-- Reduce list of smaller multiplication results with sum
 mulPosBN :: BigNumber -> BigNumber -> BigNumber
 mulPosBN x y = foldl somaBN zeroBN (mulListBN x y)
 
 mulBN :: BigNumber -> BigNumber -> BigNumber
+-- Change to equivalent multiplication with positive numbers
 mulBN x y
     | isPositive x && isPositive y = mulPosBN x y
     | isPositive x && isNegative y = minusBN (mulPosBN x (minusBN y))
@@ -149,8 +168,11 @@ mulBN x y
 equalsBN :: BigNumber -> BigNumber -> Bool
 equalsBN Empty Empty = True;
 equalsBN (BN xs x) (BN ys y)
+    -- If length is different, numbers are different
     | lengthBN (BN xs x) /= lengthBN (BN ys y) = False
+    -- If a number differs, numbers are different
     | x /= y = False
+    -- Call with xs and ys
     | otherwise = equalsBN xs ys
 
 greaterOrEqualsBN :: BigNumber -> BigNumber -> Bool
@@ -159,24 +181,44 @@ greaterOrEqualsBN x y = x `greaterBN` y || x `equalsBN` y
 lesserOrEqualsBN :: BigNumber -> BigNumber -> Bool
 lesserOrEqualsBN x y = not (x `greaterBN` y) || x `equalsBN` y
 
-baseDivBN :: BigNumber -> BigNumber -> BigNumber -> (BigNumber, BigNumber)
-baseDivBN x y q
+-- Naive division, only for smaller numbers
+naiveDivBN :: BigNumber -> BigNumber -> BigNumber -> (BigNumber, BigNumber)
+naiveDivBN x y q
+    -- If y times q is greater than x then result is q - 1 and calculate the remainder
     | mulBN y q `greaterBN` x = (subBN q oneBN, subBN x (mulBN y (subBN q oneBN)))
-    | otherwise = baseDivBN x y (somaBN q oneBN)
+    -- Otherwise call with q + 1
+    | otherwise = naiveDivBN x y (somaBN q oneBN)
 
+-- Helper for divBN, does the heavy lifting
 divBNHelper :: BigNumber -> BigNumber -> BigNumber -> BigNumber -> (BigNumber, BigNumber)
+-- If x has been entirely consumed then division is over, return tuple with quotient and remainder
 divBNHelper Empty _ q r = (q, r)
+-- Follows manual division algorithm
+-- Take r multiply it by 10 and add the first digit of x and naively divide the result by y 
+-- (starting with quotient accumulator at 1) and store the result in q_div and r_div 
+-- Call divBNHelper with the remaining digits of x, y, the previous quotient times 10 plus q_div, and r_div 
 divBNHelper x y q r = divBNHelper (tailBN x) y (removeLeadingZeros (BN q q_div)) (removeLeadingZeros r_div)
-    where (BN _ q_div, r_div) = baseDivBN (removeLeadingZeros (BN r (firstBN x))) y oneBN
+    where (BN _ q_div, r_div) = naiveDivBN (removeLeadingZeros (BN r (firstBN x))) y oneBN
 
+-- Divide BigNumbers
 divBN :: BigNumber -> BigNumber -> (BigNumber, BigNumber)
+-- Call divBNHelper with x, y and q and r accumulators starting at zero
 divBN x y = divBNHelper x y zeroBN zeroBN
 
+--Transforms a BigNumber into an Int
 bigNumberToInt :: BigNumber -> Int
+-- If argument is a single digit BigNumber, returns the digit
 bigNumberToInt (BN Empty x) = x
-bigNumberToInt (BN xs x) = bigNumberToInt xs * 10 + x
+bigNumberToInt (BN xs x)
+    -- Else if argument is negative and multi-digit, reduce to positive case
+    | isNegative (BN xs x) = - bigNumberToInt (minusBN (BN xs x))
+    -- Otherwise multiply the Int transformation of xs by 10 and add x
+    | otherwise = bigNumberToInt xs * 10 + x
 
+-- Division with safeguard for divide by 0
 safeDivBN :: BigNumber -> BigNumber -> Maybe (BigNumber, BigNumber)
-safeDivBN x y 
-    | y `equalsBN` zeroBN = Nothing 
+safeDivBN x y
+    -- If y equals 0 returns Nothing
+    | y `equalsBN` zeroBN = Nothing
+    -- Otherwise calls regular division and returns that value
     | otherwise = Just (divBN x y)
