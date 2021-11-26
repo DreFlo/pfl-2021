@@ -55,7 +55,7 @@ paddBN (BN Empty x) (BN Empty _) = BN Empty x
 paddBN (BN Empty x) (BN ys y) = BN (paddBN zeroBN ys) x
 paddBN (BN xs x) (BN ys y) = BN (paddBN xs ys) x
 
---Converts a string into a positive BigNumber
+--Converts a string into BigNumber, that is going to be saved in reversed order (VER) 
 scannerHelper :: String  -> BigNumber
 scannerHelper [] = Empty
 scannerHelper (x:xs) = BN (scannerHelper xs) (digitToInt x)

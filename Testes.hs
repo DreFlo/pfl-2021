@@ -46,9 +46,9 @@ isPositive (scanner "12")
 isPositive (scanner "0") -- > ??
 isPositive (scanner "-12")
 
---FALTA
 --minusBNHelper :: BigNumber -> BigNumber
 output (minusBNHelper (scanner "-12"))
+output (minusBNHelper (scanner "12"))
 
 --removeLeadingZeros :: BigNumber -> BigNumber
 output (removeLeadingZeros (scanner "000012"))
@@ -56,7 +56,8 @@ output (removeLeadingZeros (scanner "100002"))
 output (removeLeadingZeros (scanner "120000"))
 
 --minusBN :: BigNumber -> BigNumber
-output (minusBN (scanner "-12"))
+output (minusBN (scanner "-000012"))
+output (minusBN (scanner "000012"))
 output (minusBN (scanner "12"))
 
 --firstBN :: BigNumber -> Int
@@ -72,9 +73,8 @@ output (paddBN (scanner "12") (scanner "123"))
 output (paddBN (scanner "12") (scanner "12367"))
 output (paddBN (scanner "12") (scanner "1")) -- > este caso dá erro
 
---FALTA
 --scannerHelper :: String  -> BigNumber
-output (scannerHelper (scanner "-12"))
+output (scannerHelper "12")
 
 --scanner :: String -> BigNumber
 output (scanner "-12")
