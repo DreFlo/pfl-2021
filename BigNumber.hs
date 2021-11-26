@@ -5,10 +5,12 @@ import Data.Char (chr, ord)
 
 data BigNumber = Empty | BN BigNumber Int deriving Show
 
+--Checks whether the BigNumber is negative
 isNegative :: BigNumber -> Bool
 isNegative (BN Empty x) = x < 0
 isNegative (BN xs x) = isNegative xs
 
+--Checks whether the BigNumber is positive
 isPositive :: BigNumber -> Bool
 isPositive = not . isNegative
 
@@ -21,41 +23,50 @@ oneBN = BN Empty 1
 twoBN :: BigNumber
 twoBN = BN Empty 2
 
+--Calculates the additive inverse of a given BigNumber
 minusBNHelper :: BigNumber -> BigNumber
 minusBNHelper (BN Empty x) = BN Empty (-x)
 minusBNHelper (BN xs x) = BN (minusBNHelper xs) x
 
+--Removes leading zeros of a BigNumber
 removeLeadingZeros :: BigNumber -> BigNumber
 removeLeadingZeros x
     | lengthBN x == 1 = x
     | firstBN x == 0 = removeLeadingZeros (tailBN x)
     | otherwise = x
 
+--Calculates the additive inverse of a given BigNumber after removing leading zeros
 minusBN :: BigNumber -> BigNumber
 minusBN = minusBNHelper . removeLeadingZeros
 
+--Return the first digit of a BigNumber
 firstBN :: BigNumber -> Int
 firstBN (BN Empty x) = x
 firstBN (BN xs _) = firstBN xs
 
+--Return the given BigNumber without the first element
 tailBN :: BigNumber -> BigNumber
 tailBN (BN Empty x) = Empty
 tailBN (BN xs x) = BN (tailBN xs) x
 
+--Does padding to the first argument until it has the same length of the second argument
 paddBN :: BigNumber -> BigNumber -> BigNumber
 paddBN (BN Empty x) (BN Empty _) = BN Empty x
 paddBN (BN Empty x) (BN ys y) = BN (paddBN zeroBN ys) x
 paddBN (BN xs x) (BN ys y) = BN (paddBN xs ys) x
 
+--Converts a string into a positive BigNumber
 scannerHelper :: String  -> BigNumber
 scannerHelper [] = Empty
 scannerHelper (x:xs) = BN (scannerHelper xs) (digitToInt x)
 
+--Converts a string into a BigNumber
 scanner :: String -> BigNumber
 scanner str
     | head str /= '-' = scannerHelper (reverse str)
     | otherwise = minusBN (scannerHelper (reverse (tail str)))
 
+--Converts BigNumber into a String
 output :: BigNumber -> String
 output (BN Empty x)
     | x < 0 = ['-', chr (abs x + ord '0')]
