@@ -12,7 +12,7 @@ isNegative (BN xs x) = isNegative xs
 
 --Checks whether the BigNumber is positive
 isPositive :: BigNumber -> Bool
-isPositive = not . isNegative
+isPositive x = not (isNegative x) && not (equalsBN zeroBN (removeLeadingZeros x))
 
 zeroBN :: BigNumber
 zeroBN = BN Empty 0
@@ -52,8 +52,9 @@ tailBN (BN xs x) = BN (tailBN xs) x
 --Does padding to the first argument until it has the same length of the second argument
 paddBN :: BigNumber -> BigNumber -> BigNumber
 paddBN (BN Empty x) (BN Empty _) = BN Empty x
-paddBN (BN Empty x) (BN ys y) = BN (paddBN zeroBN ys) x
-paddBN (BN xs x) (BN ys y) = BN (paddBN xs ys) x
+paddBN (BN Empty x) (BN ys _) = BN (paddBN zeroBN ys) x
+paddBN (BN xs x) (BN ys _) = BN (paddBN xs ys) x
+paddBN x _ = x
 
 --Converts a string into BigNumber, that is going to be saved in reversed order (VER) 
 scannerHelper :: String  -> BigNumber
