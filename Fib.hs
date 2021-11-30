@@ -45,6 +45,7 @@ fibListaBN n = lista !! bigNumberToInt n
     where lista = zeroBN : oneBN : [(lista !! (x - 2)) `somaBN` (lista !! (x - 1)) | x <- [2.. (bigNumberToInt n)]]
 
 --Calculate n-th fibonacci number using an infinite list comprehension where each number is
---the sum of the two previous numbers using BigNumber for argument and return valuefibListaInfinitaBN :: BigNumber -> BigNumber
+--the sum of the two previous numbers using BigNumber for argument and return value
+fibListaInfinitaBN :: BigNumber -> BigNumber
 fibListaInfinitaBN n = lista !! bigNumberToInt n
     where lista = zeroBN : oneBN : zipWith somaBN lista (tail lista)
