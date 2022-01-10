@@ -10,6 +10,15 @@ Type - s - samurai
 0 <= Y <= 7
 */
 :- use_module(library(lists)).
+:- use_module(library(random)).
+
+% read_until_between(+Min, +Max, -Value)
+read_until_between(Min,Max,Value):-
+    repeat,
+    read(Value),
+    Value >= Min,
+    Value < Max,
+    !.
 
 get_piece_at(X, Y, game(Board, _, _, _, _, _), Piece) :-
      nth0(Y, Board, Row),
@@ -63,17 +72,18 @@ display_board([H | T], Size) :-
      write_line(H),
      display_board(T, Size).
 
-%game(Board, CapturedSamurai, CapturedNinjas, State, Turn)
-%TODO alter to State to start after
-initial_state(Size, game(Board, 0, 0, playing, s, Size)) :-
+%game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn)
+initial_state(Size, game(Board, 0, 0, _, s, Size)) :-
      initial_board(Size, Board).
 
 get_turn_string(s, 'Samurai').
 
 get_turn_string(n, 'Ninja').
 
-display_game(game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size)) :-
-     get_turn_string(Turn, TurnString),
+display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)) :-
+     get_turn_string(Turn, TurnString), nl,
+     write('Mode: '),
+     display(Mode), nl,
      format('~w\'s turn\n-----------------\n\nPoints - ~d\n', [TurnString, CapturedNinjas]),
      display_board(Board, Size),
      format('Points - ~d\n', [CapturedSamurai]),
@@ -92,7 +102,7 @@ replace_in_board(X, Y, Elem, [Head | Tail], [Head | Result]) :-
      NewY is Y - 1,
      replace_in_board(X, NewY, Elem, Tail, Result).
 
-replace_in_game(X, Y, Elem, game(Board, CapturedSamurai, CapturedNinjas, State, Turn, Size), game(NewBoard, CapturedSamurai, CapturedNinjas, State, Turn, Size)) :-
+replace_in_game(X, Y, Elem, game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), game(NewBoard, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)) :-
      replace_in_board(X, Y, Elem, Board, NewBoard).
 
 move_helper(Game, piece(Type, X1, Y1), X2, Y2, NewGame) :-
@@ -264,97 +274,95 @@ add_one_captured(s, CapturedSamurai, CapturedNinjas, CapturedSamurai, NewCapture
 add_one_captured(n, CapturedSamurai, CapturedNinjas, NewCapturedSamurai, CapturedNinjas) :-
      NewCapturedSamurai is CapturedSamurai + 1.
 
-% diagonal case
-move(Game, step(piece(Type, X1, Y1), X2, Y2), game(Board, NewCapturedSamurai, NewCapturedNinjas, State, Turn, Size)) :-
-     is_diagonal_move(X1, Y1, X2, Y2),
-     within_bounds(Game, X1, Y1),
-     within_bounds(Game, X2, Y2),
+move(Game, step(piece(Type, X1, Y1), X2, Y2), game(Board, NewCapturedSamurai, NewCapturedNinjas, Mode, Turn, Size)) :-
+     valid_moves(Game, ListOfMoves),
+     member(step(piece(Type, X1, Y1), X2, Y2), ListOfMoves),
      is_capture_move(piece(Type, _, _), Game, X2, Y2),
-     get_direction_diagonal(X1, Y1, X2, Y2, Dir),
-     get_begin_coord(X1, Y1, Dir, BeginX, BeginY),
-     check_diagonal(Type, Dir, Game, BeginX, BeginY, X2, Y2),
-     move_helper(Game, piece(Type, X1, Y1), X2, Y2, game(Board, CapturedSamurai, CapturedNinjas, State, Turn, Size)),
+     move_helper(Game, piece(Type, X1, Y1), X2, Y2, game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)),
      add_one_captured(Type, CapturedSamurai, CapturedNinjas, NewCapturedSamurai, NewCapturedNinjas).
 move(Game, step(piece(Type, X1, Y1), X2, Y2), NewGame) :-
-     is_diagonal_move(X1, Y1, X2, Y2),
-     within_bounds(Game, X1, Y1),
-     within_bounds(Game, X2, Y2),
+     valid_moves(Game, ListOfMoves),
+     member(step(piece(Type, X1, Y1), X2, Y2), ListOfMoves),
      \+ is_capture_move(piece(Type, _, _), Game, X2, Y2),
-     get_direction_diagonal(X1, Y1, X2, Y2, Dir),
-     get_begin_coord(X1, Y1, Dir, BeginX, BeginY),
-     \+ check_diagonal(Type, Dir, Game, BeginX, BeginY, X2, Y2),
      move_helper(Game, piece(Type, X1, Y1), X2, Y2, NewGame).
 
-% horizontal case
-move(Game, step(piece(Type, X1, Y), X2, Y), game(Board, NewCapturedSamurai, NewCapturedNinjas, State, Turn, Size)) :-
-     within_bounds(Game, X1, Y),
-     within_bounds(Game, X2, Y),
-     is_capture_move(piece(Type, _, _), Game, X2, Y),
-     get_direction_horizontal(X1, X2, Dir),
-     get_begin_x(X1, Dir, BeginX),
-     check_horizontal(Type, Dir, Game, Y, BeginX, X2),
-     move_helper(Game, piece(Type, X1, Y), X2, Y, game(Board, CapturedSamurai, CapturedNinjas, State, Turn, Size)),
-     add_one_captured(Type, CapturedSamurai, CapturedNinjas, NewCapturedSamurai, NewCapturedNinjas).
-move(Game, step(piece(Type, X1, Y), X2, Y), NewGame) :-
-     within_bounds(Game, X1, Y),
-     within_bounds(Game, X2, Y),
-     \+ is_capture_move(piece(Type, _, _), Game, X2, Y),
-     get_direction_horizontal(X1, X2, Dir),
-     get_begin_x(X1, Dir, BeginX),
-     \+ check_horizontal(Type, Dir, Game, Y, BeginX, X2),
-     move_helper(Game, piece(Type, X1, Y), X2, Y, NewGame).
-
-% vertical case
-move(Game, step(piece(Type, X, Y1), X, Y2), game(Board, NewCapturedSamurai, NewCapturedNinjas, State, Turn, Size)) :-
-     within_bounds(Game, X, Y1),
-     within_bounds(Game, X, Y2),
-     is_capture_move(piece(Type, _, _), Game, X, Y2),
-     get_direction_vertical(Y1, Y2, Dir),
-     get_begin_y(Y1, Dir, BeginY),
-     check_vertical(Type, Dir, Game, X, BeginY, Y2),
-     move_helper(Game, piece(Type, X, Y1), X, Y2, game(Board, CapturedSamurai, CapturedNinjas, State, Turn, Size)),
-     add_one_captured(Type, CapturedSamurai, CapturedNinjas, NewCapturedSamurai, NewCapturedNinjas).
-move(Game, step(piece(Type, X, Y1), X, Y2), NewGame) :-
-     within_bounds(Game, X, Y1),
-     within_bounds(Game, X, Y2),
-     \+ is_capture_move(piece(Type, _, _), Game, X, Y2),
-     get_direction_vertical(Y1, Y2, Dir),
-     get_begin_y(Y1, Dir, BeginY),
-     \+ check_vertical(Type, Dir, Game, X, BeginY, Y2),
-     move_helper(Game, piece(Type, X, Y1), X, Y2, NewGame).
-
-game_over(game(_, _, CapturedNinjas, playing, _, Size), s) :-
+game_over(game(_, _, CapturedNinjas, _, _, Size), s) :-
      PiecesToWin is div(Size, 2),
      CapturedNinjas >= PiecesToWin.
-game_over(game(_, CapturedSamurai, _, playing, _, Size), n) :-
+game_over(game(_, CapturedSamurai, _, _, _, Size), n) :-
      PiecesToWin is div(Size, 2),
      CapturedSamurai >= PiecesToWin.
-game_over(game(_, _, _, playing, _, _), u).
+game_over(game(_, _, _, _, _, _), u).
 
-start_menu(Size) :-
+start_menu(Size, Mode) :-
      write('# Menu\nInput board size: '),
-     read(Size).
+     read(Size),
+     write('# Write game mode (p_v_p, p_v_random_ai, p_v_miopic_ai)'),
+     read(Mode).
 
-change_player(game(Board, CapturedSamurai, CapturedNinjas, State, s, Size), game(Board, CapturedSamurai, CapturedNinjas, State, n, Size)).
-change_player(game(Board, CapturedSamurai, CapturedNinjas, State, n, Size), game(Board, CapturedSamurai, CapturedNinjas, State, s, Size)).
+change_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), game(Board, CapturedSamurai, CapturedNinjas, Mode, n, Size)).
+change_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, n, Size), game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size)).
 
-play_game(_, s) :-
-     write('Samurai wins!').
-play_game(_, n) :-
-     write('Ninja wins!').
-play_game(game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size), u) :-
-     display_game(game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size)),
+choose_move_miopic_helper(_, [step(Piece, X, Y)], step(Piece, X, Y)).
+choose_move_miopic_helper(Game, [step(Piece, X, Y) | _], step(Piece, X, Y)) :-
+     is_capture_move(Piece, Game, X, Y).
+choose_move_miopic_helper(Game, [_ | Tail], Move) :-
+     choose_move_miopic_helper(Game, Tail, Move).
+
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), 1, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), ListOfMoves),
+     random_member(Move, ListOfMoves).
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), 2, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), ListOfMoves),
+     choose_move_miopic_helper(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), ListOfMoves, Move).
+
+% Sara
+
+read_move_from_player(game(Board, _, _, _, Turn, Size), step(piece(Turn, X1, Y1), X2, Y2)) :-
+     repeat,
      write('Input Piece to move. X'), nl,
-     read(X1),
+     read_until_between(0, Size, X1),
      write('Y'), nl,
-     read(Y1),
+     read_until_between(0, Size, Y1),
      write('To X'), nl,
-     read(X2),
+     read_until_between(0, Size, X2),
      write('Y'), nl,
-     read(Y2),
-     !,
-     get_piece_at(X1, Y1, game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size), piece(Turn, X1, Y1)),
-     move(game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size), step(piece(Turn, X1, Y1), X2, Y2), Temp),
+     read_until_between(0, Size, Y2),
+     get_piece_at(X1, Y1, game(Board, _, _, _, Turn, Size), piece(Turn, X1, Y1)),
+     valid_moves(game(Board, _, _, _, Turn, Size), ListOfMoves),
+     member(step(piece(Turn, X1, Y1), X2, Y2), ListOfMoves).
+
+play_game(Game, s) :-
+     display_game(Game),
+     write('Samurai wins!').
+play_game(Game, n) :-
+     display_game(Game),
+     write('Ninja wins!').
+play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size)),
+     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), Move, Temp),
+     game_over(Temp, Winner),
+     change_player(Temp, NewGame),
+     play_game(NewGame, Winner).
+play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size)),
+     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), Move, Temp),
+     game_over(Temp, Winner),
+     change_player(Temp, NewGame),
+     play_game(NewGame, Winner).
+play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size)),
+     choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), 1, Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), Move, Temp),
+     game_over(Temp, Winner),
+     change_player(Temp, NewGame),
+     play_game(NewGame, Winner).
+play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size)),
+     choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), 2, Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), Move, Temp),
      game_over(Temp, Winner),
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
@@ -619,32 +627,11 @@ go_through_board([Row | Tail], Board, Turn, Size, ListOfMoves) :-
      go_through_board(Tail, Board, Turn, Size, TailMoves),
      append(RowMoves, TailMoves, ListOfMoves).
 
-valid_moves(game(Board, _, _, playing, Turn, Size), ListOfMoves) :-
-     go_through_board(Board, Board, Turn, Size, ListOfMoves).
+valid_moves(game(Board, _, _, _, Turn, Size), ListOfMoves) :-
+     go_through_board(Board, Board, Turn, Size, ListOfMoves),
+     !.
 
 play :-
-     initial_state(8, Game),
-     replace_in_game(4, 2, piece(n, 4, 2), Game, NG),
-     replace_in_game(3, 1, piece(s, 3, 1), NG, NG2),
-     replace_in_game(5, 3, piece(s, 5, 3), NG2, NG3),
-     replace_in_game(3, 3, piece(s, 3, 3), NG3, NG4),
-     replace_in_game(6, 4, piece(s, 6, 4), NG4, NG5),
-     replace_in_game(2, 4, piece(s, 2, 4), NG5, NG6),
-     replace_in_game(5, 1, piece(s, 5, 1), NG6, NG7),
-     display_game(NG7),
-     !,
-     valid_moves(NG7, List),
-     display(List).
-     /**
-     !,
-     replace_in_game(3, 4, piece(s, 3, 4), Game, NG1),
-     get_piece_at(1, 0, NG1, Piece1),
-     move(NG1, step(Piece1, 0, 1), NG2),
-     display_game(NG2),
-     get_piece_at(5, 7, NG2, Piece2),
-     move(NG2, step(Piece2, 5, 6), NG3),
-     display_game(NG3),
-     get_piece_at(0, 1, NG3, Piece3),
-     !,
-     move(NG3, step(Piece3, 5, 6), NG4),
-     display_game(NG4).*/
+     start_menu(Size, Mode),
+     initial_state(Size, game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)),
+     play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), u).
