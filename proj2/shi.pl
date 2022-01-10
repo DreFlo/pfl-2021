@@ -76,7 +76,8 @@ display_game(game(Board, CapturedSamurai, CapturedNinjas, playing, Turn, Size)) 
      get_turn_string(Turn, TurnString),
      format('~w\'s turn\n-----------------\n\nPoints - ~d\n', [TurnString, CapturedNinjas]),
      display_board(Board, Size),
-     format('Points - ~d\n', [CapturedSamurai]).
+     format('Points - ~d\n', [CapturedSamurai]),
+     !.
 
 replace_in_row(0, Elem, [_ | Tail], [Elem | Tail]).
 
@@ -368,6 +369,8 @@ iterate_over_southeast_moves(step(piece(Type, X1, Y1), X2, Y2), Board, Size, [st
      X2 < Size,
      Y2 < Size,
      get_piece_at(X2, Y2, game(Board, _, _, _, _, _), piece(b, X2, Y2)),
+     get_begin_coord(X1, Y1, se, CheckX, CheckY),
+     is_clear(se, CheckX, CheckY, X2, Y2, game(Board, _, _, _, _, _)),
      NewX is X2 + 1,
      NewY is Y2 + 1,
      iterate_over_southeast_moves(step(piece(Type, X1, Y1), NewX, NewY), Board, Size, Tail).
@@ -397,6 +400,8 @@ iterate_over_southwest_moves(step(piece(Type, X1, Y1), X2, Y2), Board, Size, [st
      X2 > -1,
      Y2 < Size,
      get_piece_at(X2, Y2, game(Board, _, _, _, _, _), piece(b, X2, Y2)),
+     get_begin_coord(X1, Y1, sw, CheckX, CheckY),
+     is_clear(sw, CheckX, CheckY, X2, Y2, game(Board, _, _, _, _, _)),
      NewX is X2 - 1,
      NewY is Y2 + 1,
      iterate_over_southwest_moves(step(piece(Type, X1, Y1), NewX, NewY), Board, Size, Tail).
@@ -426,6 +431,8 @@ iterate_over_northeast_moves(step(piece(Type, X1, Y1), X2, Y2), Board, Size, [st
      X2 < Size,
      Y2 > - 1,
      get_piece_at(X2, Y2, game(Board, _, _, _, _, _), piece(b, X2, Y2)),
+     get_begin_coord(X1, Y1, ne, CheckX, CheckY),
+     is_clear(ne, CheckX, CheckY, X2, Y2, game(Board, _, _, _, _, _)),
      NewX is X2 + 1,
      NewY is Y2 - 1,
      iterate_over_northeast_moves(step(piece(Type, X1, Y1), NewX, NewY), Board, Size, Tail).
@@ -455,6 +462,8 @@ iterate_over_northwest_moves(step(piece(Type, X1, Y1), X2, Y2), Board, [step(pie
      X2 > -1,
      Y2 > -1,
      get_piece_at(X2, Y2, game(Board, _, _, _, _, _), piece(b, X2, Y2)),
+     get_begin_coord(X1, Y1, nw, CheckX, CheckY),
+     is_clear(nw, CheckX, CheckY, X2, Y2, game(Board, _, _, _, _, _)),
      NewX is X2 - 1,
      NewY is Y2 - 1,
      iterate_over_northwest_moves(step(piece(Type, X1, Y1), NewX, NewY), Board, Tail).
@@ -491,6 +500,8 @@ iterate_over_south_moves(step(piece(Type, X, Y1), X, Y2), Board, Size, [step(pie
 iterate_over_south_moves(step(piece(Type, X, Y1), X, Y2), Board, Size, [step(piece(Type, X, Y1), X, Y2) | Tail]) :-
      Y2 < Size,
      get_piece_at(X, Y2, game(Board, _, _, _, _, _), piece(b, X, Y2)),
+     get_begin_y(Y1, south, CheckY),
+     is_clear(south, X, CheckY, X, Y2, game(Board, _, _, _, _, _)),
      NewY is Y2 + 1,
      iterate_over_south_moves(step(piece(Type, X, Y1), X, NewY), Board, Size, Tail).
 iterate_over_south_moves(step(piece(Type, X, Y1), X, Y2), Board, Size, Tail) :-
@@ -513,6 +524,8 @@ iterate_over_north_moves(step(piece(Type, X, Y1), X, Y2), Board, [step(piece(Typ
 iterate_over_north_moves(step(piece(Type, X, Y1), X, Y2), Board, [step(piece(Type, X, Y1), X, Y2) | Tail]) :-
      Y2 > -1,
      get_piece_at(X, Y2, game(Board, _, _, _, _, _), piece(b, X, Y2)),
+     get_begin_y(Y1, north, CheckY),
+     is_clear(north, X, CheckY, X, Y2, game(Board, _, _, _, _, _)),
      NewY is Y2 - 1,
      iterate_over_north_moves(step(piece(Type, X, Y1), X, NewY), Board, Tail).
 iterate_over_north_moves(step(piece(Type, X, Y1), X, Y2), Board, Tail) :-
@@ -540,6 +553,8 @@ iterate_over_east_moves(step(piece(Type, X1, Y), X2, Y), Board, Size, [step(piec
 iterate_over_east_moves(step(piece(Type, X1, Y), X2, Y), Board, Size, [step(piece(Type, X1, Y), X2, Y) | Tail]) :-
      X2 < Size,
      get_piece_at(X2, Y, game(Board, _, _, _, _, _), piece(b, X2, Y)),
+     get_begin_x(X1, east, CheckX),
+     is_clear(east, CheckX, Y, X2, Y, game(Board, _, _, _, _, _)),
      NewX is X2 + 1,
      iterate_over_east_moves(step(piece(Type, X1, Y), NewX, Y), Board, Size, Tail).
 iterate_over_east_moves(step(piece(Type, X1, Y), X2, Y), Board, Size, Tail) :-
@@ -563,7 +578,7 @@ iterate_over_west_moves(step(piece(Type, X1, Y), X2, Y), Board, [step(piece(Type
      X2 > -1,
      get_piece_at(X2, Y, game(Board, _, _, _, _, _), piece(b, X2, Y)),
      get_begin_x(X1, west, CheckX),
-     \+ check_horizontal(Type, west, game(Board, _, _, _, _, _), Y, CheckX, X2),
+     is_clear(west, CheckX, Y, X2, Y, game(Board, _, _, _, _, _)),
      NewX is X2 - 1,
      iterate_over_west_moves(step(piece(Type, X1, Y), NewX, Y), Board, Tail).
 iterate_over_west_moves(step(piece(Type, X1, Y), X2, Y), Board, Tail) :-
@@ -583,12 +598,12 @@ get_horizontal_moves(Piece, Board, Size, HorizontalMoves) :-
      get_west_moves(Piece, Board, WestMoves),
      append(EastMoves, WestMoves, HorizontalMoves).
 
-moves_for_piece(Piece, Board, Size, DiagonalMoves) :-
-     %get_horizontal_moves(Piece, Board, Size, HorizontalMoves),
-     %get_vertical_moves(Piece, Board, Size, VerticalMoves).
-     get_diagonal_moves(Piece, Board, Size, DiagonalMoves).
-     %append(HorizontalMoves, VerticalMoves, Temp).
-     %append(Temp, DiagonalMoves, ListOfMoves).
+moves_for_piece(Piece, Board, Size, ListOfMoves) :-
+     get_horizontal_moves(Piece, Board, Size, HorizontalMoves),
+     get_vertical_moves(Piece, Board, Size, VerticalMoves),
+     get_diagonal_moves(Piece, Board, Size, DiagonalMoves),
+     append(HorizontalMoves, VerticalMoves, Temp),
+     append(Temp, DiagonalMoves, ListOfMoves).
 
 go_through_row([], _, _, _, []).
 go_through_row([piece(Turn, X, Y) | Tail], Board, Turn, Size, RowMoves) :-
@@ -633,5 +648,3 @@ play :-
      !,
      move(NG3, step(Piece3, 5, 6), NG4),
      display_game(NG4).*/
-
-%TODO N saltar se n for captura
