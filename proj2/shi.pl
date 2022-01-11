@@ -20,16 +20,19 @@ read_until_between(Min,Max,Value):-
     Value < Max,
     !.
 
+% get_piece_at(+X, +Y, +Game, -Piece)
 get_piece_at(X, Y, game(Board, _, _, _, _, _), Piece) :-
      nth0(Y, Board, Row),
      nth0(X, Row, Piece).
 
+% initial_row(+PieceNo, +Size, +Y, +Type, -Row)
 initial_row(0, _, _, _, []).
 initial_row(PieceNo, Size, Y, Type, [piece(Type, X, Y) | Tail]) :-
      NewPieceNo is PieceNo - 1,
      X is Size - PieceNo,
      initial_row(NewPieceNo, Size, Y, Type, Tail).
 
+% initial_middle(+PieceNo, +Size, +Number, -Middle)
 initial_middle(PieceNo, Size, Number, Number, [Result]) :-
      initial_row(PieceNo, Size, Number, b, Result).
 initial_middle(PieceNo, Size, Number, Y, [Head | Tail]) :-
@@ -37,6 +40,7 @@ initial_middle(PieceNo, Size, Number, Y, [Head | Tail]) :-
      initial_row(PieceNo, Size, Y, b, Head),
      initial_middle(PieceNo, Size, Number, NewY, Tail).
 
+% initial_board(+Size, -Board)
 initial_board(Size, [FirstRow | Tail]) :-
      LastY is Size - 1,
      Number is Size - 2,
@@ -45,6 +49,7 @@ initial_board(Size, [FirstRow | Tail]) :-
      initial_row(Size, Size, LastY, n, LastRow),
      append(Middle, [LastRow], Tail).
 
+% write_piece(+Piece)
 write_piece(piece(s, _, _)) :-
      write('|S').
 write_piece(piece(n, _, _)) :-
@@ -52,12 +57,14 @@ write_piece(piece(n, _, _)) :-
 write_piece(piece(b, _, _)) :-
      write('| ').
 
+% write_line(+Line)
 write_line([]) :-
      write('|\n').
 write_line([H | T]) :-
      write_piece(H),
      write_line(T).
 
+% write_border(+Size)
 write_border(0) :-
      write('+\n').
 write_border(Size) :-
@@ -65,6 +72,7 @@ write_border(Size) :-
      NewSize is Size - 1,
      write_border(NewSize).
 
+% display_board(+Board, +Size)
 display_board([], Size) :-
      write_border(Size).
 display_board([H | T], Size) :-
@@ -72,14 +80,15 @@ display_board([H | T], Size) :-
      write_line(H),
      display_board(T, Size).
 
-%game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn)
+% initial_state(+Size, -Game)
 initial_state(Size, game(Board, 0, 0, _, s, Size)) :-
      initial_board(Size, Board).
 
+% get_turn_string(+Turn, -String)
 get_turn_string(s, 'Samurai').
-
 get_turn_string(n, 'Ninja').
 
+% display_game(+Game)
 display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)) :-
      get_turn_string(Turn, TurnString), nl,
      write('Mode: '),
@@ -89,44 +98,51 @@ display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)) :-
      format('Points - ~d\n', [CapturedSamurai]),
      !.
 
+% replace_in_row(+Index, +Elem, +Row, -Result)
 replace_in_row(0, Elem, [_ | Tail], [Elem | Tail]).
-
 replace_in_row(Index, Elem, [Head | Tail], [Head | Result]) :-
      NewIndex is Index - 1,
      replace_in_row(NewIndex, Elem, Tail, Result).
 
+% replace_in_board(+X, +Y, +Elem, +Board, -Result)
 replace_in_board(X, 0, Elem, [Head | Tail], [Result | Tail]) :-
      replace_in_row(X, Elem, Head, Result).
-
 replace_in_board(X, Y, Elem, [Head | Tail], [Head | Result]) :-
      NewY is Y - 1,
      replace_in_board(X, NewY, Elem, Tail, Result).
 
+% replace_in_game(+X, +Y, +Elem, +Game, -Result)
 replace_in_game(X, Y, Elem, game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), game(NewBoard, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)) :-
      replace_in_board(X, Y, Elem, Board, NewBoard).
 
+% move_helper(+Game, +Piece, +X, +Y, -Result)
 move_helper(Game, piece(Type, X1, Y1), X2, Y2, NewGame) :-
      replace_in_game(X1, Y1, piece(b, X1, Y1), Game, Temp),
      replace_in_game(X2, Y2, piece(Type, X2, Y2), Temp, NewGame).
 
+% within_bounds(+Game, +X, +Y)
 within_bounds(game(_, _, _, _, _, Size), X, Y) :-
      X > -1,
      X < Size,
      Y > -1,
      Y < Size.
 
+% can_capture(+Piece1, +Piece2)
 can_capture(piece(s, _, _), piece(n, _, _)).
 can_capture(piece(n, _, _), piece(s, _, _)).
 
+% is_capture_move(+Piece, +Game, +X2, +Y2)
 is_capture_move(piece(Type, _, _), Game, X2, Y2) :-
      get_piece_at(X2, Y2, Game, Piece),
      can_capture(piece(Type, _, _), Piece).
 
+% is_diagonal_move(+X1, +Y1, +X2, +Y2)
 is_diagonal_move(X1, Y1, X2, Y2) :-
      DeltaX is abs(X2 - X1),
      DeltaY is abs(Y2 - Y1),
      DeltaX is DeltaY.
 
+% is_clear(+Dir, +X1, +Y1, +X2, +Y2, +Game)
 is_clear(_, X, Y, X, Y, _).
 is_clear(west, X1, Y, X2, Y, game(Board, _, _, _, _, _)) :-
      get_piece_at(X1, Y, game(Board, _, _, _, _, _), piece(b, X1, Y)),
@@ -165,6 +181,7 @@ is_clear(sw, X1, Y1, X2, Y2, game(Board, _, _, _, _, _)) :-
      NewY is Y1 + 1,
      is_clear(sw, NewX, NewY, X2, Y2, game(Board, _, _, _, _, _)).
 
+% check_vertical(+Type, +Dir, +Game, +X, +CurrY, +TargetY)
 check_vertical(Type, _, game(Board, _, _, _, _, _), X, CurrY, TargetY) :-
      get_piece_at(X, CurrY, game(Board, _, _, _, _, _), piece(Type, X, CurrY)),
      !,
@@ -179,26 +196,31 @@ check_vertical(Type, north, game(Board, _, _, _, _, _), X, CurrY, TargetY) :-
      NewY is CurrY - 1,
      check_vertical(Type, north, game(Board, _, _, _, _, _), X, NewY, TargetY).
 
+% get_direction_vertical(+BeginY, +TargetY, -Dir)
 get_direction_vertical(BeginY, TargetY, south) :-
      TargetY > BeginY.
 get_direction_vertical(BeginY, TargetY, north) :-
      TargetY < BeginY.
 
+% get_begin_y(+Y, +Dir, -NewY)
 get_begin_y(Y, south, NewY) :-
      NewY is Y + 1.
 get_begin_y(Y, north, NewY) :-
      NewY is Y - 1.
 
+% get_direction_horizontal(+BeginX, +TargetX, -Dir)
 get_direction_horizontal(BeginX, TargetX, east) :-
      TargetX > BeginX.
 get_direction_horizontal(BeginX, TargetX, west) :-
      TargetX < BeginX.
 
+% get_begin_x(+X, +Dir, -BeginX)
 get_begin_x(X, east, BeginX) :-
      BeginX is X + 1.
 get_begin_x(X, west, BeginX) :-
      BeginX is X - 1.
 
+% check_horizontal(+Type, +Dir, +Game, +Y, +CurrX, +TargetX)
 check_horizontal(Type, Dir, game(Board, _, _, _, _, _), Y, CurrX, TargetX) :-
      get_piece_at(CurrX, Y, game(Board, _, _, _, _, _), piece(Type, CurrX, Y)),
      !,
@@ -213,6 +235,7 @@ check_horizontal(Type, west, game(Board, _, _, _, _, _), Y, CurrX, TargetX) :-
      NewX is CurrX - 1,
      check_horizontal(Type, west, game(Board, _, _, _, _, _), Y, NewX, TargetX).
 
+% get_direction_diagonal(+BeginX, +BeginY, +TargetX, +TargetY, -Dir)
 get_direction_diagonal(BeginX, BeginY, TargetX, TargetY, ne) :-
      TargetX > BeginX,
      TargetY < BeginY.
@@ -226,6 +249,7 @@ get_direction_diagonal(BeginX, BeginY, TargetX, TargetY, nw) :-
      TargetX < BeginX,
      TargetY < BeginY.
 
+% get_begin_coord(+X, +Y, +Dir, -BeginX, -BeginY)
 get_begin_coord(X, Y, ne, BeginX, BeginY) :-
      BeginX is X + 1,
      BeginY is Y - 1.
@@ -239,6 +263,7 @@ get_begin_coord(X, Y, nw, BeginX, BeginY) :-
      BeginX is X - 1,
      BeginY is Y - 1.
 
+% check_diagonal(+Type, +Dir, +Game, +CurrX, +CurrY, +TargetX, +TagretY)
 check_diagonal(Type, Dir, game(Board, _, _, _, _, _), CurrX, CurrY, TargetX, TargetY) :-
      get_piece_at(CurrX, CurrY, game(Board, _, _, _, _, _), piece(Type, CurrX, CurrY)),
      !,
@@ -269,11 +294,13 @@ check_diagonal(Type, nw, game(Board, _, _, _, _, _), CurrX, CurrY, TargetX, Targ
      NewY is CurrY - 1,
      check_diagonal(Type, nw, game(Board, _, _, _, _, _), NewX, NewY, TargetX, TargetY).
 
+% add_one_captured(+Turn, +CapturedSamurai, +CapturedNinjas, -NewCapturedSamurai, -NewCapturedNinjas)
 add_one_captured(s, CapturedSamurai, CapturedNinjas, CapturedSamurai, NewCapturedNinjas) :-
      NewCapturedNinjas is CapturedNinjas + 1.
 add_one_captured(n, CapturedSamurai, CapturedNinjas, NewCapturedSamurai, CapturedNinjas) :-
      NewCapturedSamurai is CapturedSamurai + 1.
 
+% move(+Game, +Move, -NewGame)
 move(Game, step(piece(Type, X1, Y1), X2, Y2), game(Board, NewCapturedSamurai, NewCapturedNinjas, Mode, Turn, Size)) :-
      valid_moves(Game, ListOfMoves),
      member(step(piece(Type, X1, Y1), X2, Y2), ListOfMoves),
@@ -286,6 +313,7 @@ move(Game, step(piece(Type, X1, Y1), X2, Y2), NewGame) :-
      \+ is_capture_move(piece(Type, _, _), Game, X2, Y2),
      move_helper(Game, piece(Type, X1, Y1), X2, Y2, NewGame).
 
+% game_over(+Game, -Winner)
 game_over(game(_, _, CapturedNinjas, _, _, Size), s) :-
      PiecesToWin is div(Size, 2),
      CapturedNinjas >= PiecesToWin.
@@ -294,21 +322,25 @@ game_over(game(_, CapturedSamurai, _, _, _, Size), n) :-
      CapturedSamurai >= PiecesToWin.
 game_over(game(_, _, _, _, _, _), u).
 
+% start_menu(-Size, -Mode)
 start_menu(Size, Mode) :-
      write('# Menu\nInput board size: '),
      read(Size),
      write('# Write game mode (p_v_p, p_v_random_ai, p_v_miopic_ai)'),
      read(Mode).
 
+% change_pplayer(+Game, -NewGame)
 change_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), game(Board, CapturedSamurai, CapturedNinjas, Mode, n, Size)).
 change_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, n, Size), game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size)).
 
+% choose_move_miopic_helper(+Game, +Moves, -Move)
 choose_move_miopic_helper(_, [step(Piece, X, Y)], step(Piece, X, Y)).
 choose_move_miopic_helper(Game, [step(Piece, X, Y) | _], step(Piece, X, Y)) :-
      is_capture_move(Piece, Game, X, Y).
 choose_move_miopic_helper(Game, [_ | Tail], Move) :-
      choose_move_miopic_helper(Game, Tail, Move).
 
+% choose_move(+Game, +AIType, -Move)
 choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), 1, Move) :-
      valid_moves(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), ListOfMoves),
      random_member(Move, ListOfMoves).
