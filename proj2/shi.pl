@@ -12,10 +12,54 @@ Type - s - samurai
 :- use_module(library(lists)).
 :- use_module(library(random)).
 
+between(A, B, C) :-
+     A =< C,
+     C =< B.
+
+select_number(MaxNumber, ValidNumber) :-
+    repeat,
+    readMenuOption(OptionNumber),
+    validateMenuOption(OptionNumber, ValidNumber, MaxNumber), !.
+
+%readMenuOption(-Option)
+/*
+Reads menu option input code, ignoring newlines (ascii code 10)
+*/
+readMenuOption(Option) :-
+    write('  -> '),
+    get_code(Option),
+    Option\=10.
+
+%validateMenuOption(+OptionInput,-ValidOption,+NumOptions)
+/*
+Checks if the row input is valid by calculating it's index, converting ascii code to number, being the firt option 0
+the index has to be within 0 and the number of options
+the next char has to be newline (else 2 chars in input, thus failing)
+*/
+validateMenuOption(OptionInput, ValidOption, NumOptions) :-
+    peek_char('\n'),
+    ValidOption is OptionInput - 48,
+    between(0, NumOptions, ValidOption),
+    skip_line.
+
+% read_number(-X)
+read_number(X):-
+     skip_line,
+     read_number_aux(X,0).
+
+read_number_aux(X,Acc):- 
+     get_code(C),
+     C >= 48,
+     C =< 57,
+     !,
+     Acc1 is 10*Acc + (C - 48),
+     read_number_aux(X,Acc1).
+read_number_aux(X,X).
+
 % read_until_between(+Min, +Max, -Value)
 read_until_between(Min,Max,Value):-
     repeat,
-    read(Value),
+    read_number(Value),
     Value >= Min,
     Value < Max,
     !.
@@ -81,7 +125,7 @@ display_board([H | T], Size) :-
      display_board(T, Size).
 
 % initial_state(+Size, -Game)
-initial_state(Size, game(Board, 0, 0, _, s, Size)) :-
+initial_state(Size, game(Board, 0, 0, _, _, Size)) :-
      initial_board(Size, Board).
 
 % get_turn_string(+Turn, -String)
@@ -322,12 +366,25 @@ game_over(game(_, CapturedSamurai, _, _, _, Size), n) :-
      CapturedSamurai >= PiecesToWin.
 game_over(game(_, _, _, _, _, _), u).
 
-% start_menu(-Size, -Mode)
-start_menu(Size, Mode) :-
+% get_mode_and_turn_from_choice(+Choice, -Mode, -StartTurn)
+get_mode_and_turn_from_choice(1, h_h, s).
+get_mode_and_turn_from_choice(2, h_h, n).
+get_mode_and_turn_from_choice(3, p_v_random_ai, s).
+get_mode_and_turn_from_choice(4, p_v_random_ai, n).
+get_mode_and_turn_from_choice(5, p_v_miopic_ai, s).
+get_mode_and_turn_from_choice(6, p_v_miopic_ai, n).
+get_mode_and_turn_from_choice(7, random_ai_v_random_ai, s).
+get_mode_and_turn_from_choice(8, miopic_ai_v_miopic_ai, s).
+get_mode_and_turn_from_choice(9, random_ai_v_miopic_ai, s).
+
+% start_menu(-Size, -Mode, -StartTurn)
+start_menu(Size, Mode, StartTurn) :-
+     repeat,
      write('# Menu\nInput board size: '),
      read(Size),
-     write('# Write game mode (p_v_p, p_v_random_ai, p_v_miopic_ai)'),
-     read(Mode).
+     write('# Write game mode\n1 - S/N\n2 - N/S\n3 - S/EASY AI\n4 - EASY AI/S\n5 - S/HARD AI\n6 - HARD AI/S\n7 - EASY AI/EASY AI\n8 - HARD AI/HARD AI\n9 - EASY AI/HARD AI\nChoice '),
+     read(Choice),
+     get_mode_and_turn_from_choice(Choice, Mode, StartTurn).
 
 % change_pplayer(+Game, -NewGame)
 change_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), game(Board, CapturedSamurai, CapturedNinjas, Mode, n, Size)).
@@ -341,25 +398,35 @@ choose_move_miopic_helper(Game, [_ | Tail], Move) :-
      choose_move_miopic_helper(Game, Tail, Move).
 
 % choose_move(+Game, +AIType, -Move)
-choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), 1, Move) :-
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), _, Move) :-
      valid_moves(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), ListOfMoves),
      random_member(Move, ListOfMoves).
-choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), 2, Move) :-
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_random_ai, Turn, Size), _, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_random_ai, Turn, Size), ListOfMoves),
+     random_member(Move, ListOfMoves).
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), _, Move) :-
      valid_moves(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), ListOfMoves),
      choose_move_miopic_helper(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), ListOfMoves, Move).
-
-% Sara
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, miopic_ai_v_miopic_ai, Turn, Size), _, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, miopic_ai_v_miopic_ai, Turn, Size), ListOfMoves),
+     choose_move_miopic_helper(game(Board, CapturedSamurai, CapturedNinjas, miopic_ai_v_miopic_ai, Turn, Size), ListOfMoves, Move).
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, s, Size), _, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, s, Size), ListOfMoves),
+     random_member(Move, ListOfMoves).
+choose_move(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, n, Size), _, Move) :-
+     valid_moves(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, n, Size), ListOfMoves),
+     choose_move_miopic_helper(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, n, Size), ListOfMoves, Move).
 
 % read_move_from_player(+GameState, -Move)
 read_move_from_player(game(Board, _, _, _, Turn, Size), step(piece(Turn, X1, Y1), X2, Y2)) :-
      repeat,
-     write('Input Piece to move. X'), nl,
-     read_until_between(0, Size, X1),
-     write('Y'), nl,
+     write('Input Piece to move. X '),
+     selectMenuOption(Size, X1),
+     write('Y '),
      read_until_between(0, Size, Y1),
-     write('To X'), nl,
+     write('To X '),
      read_until_between(0, Size, X2),
-     write('Y'), nl,
+     write('Y '),
      read_until_between(0, Size, Y2),
      get_piece_at(X1, Y1, game(Board, _, _, _, Turn, Size), piece(Turn, X1, Y1)),
      valid_moves(game(Board, _, _, _, Turn, Size), ListOfMoves),
@@ -372,31 +439,33 @@ play_game(Game, s) :-
 play_game(Game, n) :-
      display_game(Game),
      write('Ninja wins!').
-play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), u) :-
-     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size)),
-     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), Move),
-     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_p, Turn, Size), Move, Temp),
+play_game(game(Board, CapturedSamurai, CapturedNinjas, h_h, Turn, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, h_h, Turn, Size)),
+     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, h_h, Turn, Size), Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, h_h, Turn, Size), Move, Temp),
      game_over(Temp, Winner),
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
-play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), u) :-
-     display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size)),
-     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), Move),
-     move(game(Board, CapturedSamurai, CapturedNinjas, Mode, s, Size), Move, Temp),
+play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, s, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, s, Size)),
+     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, s, Size), Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, s, Size), Move, Temp),
      game_over(Temp, Winner),
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
-play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), u) :-
-     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size)),
-     choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), 1, Move),
-     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_random_ai, n, Size), Move, Temp),
+play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, s, Size), u) :-
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, s, Size)),
+     read_move_from_player(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, s, Size), Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, s, Size), Move, Temp),
      game_over(Temp, Winner),
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
-play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), u) :-
-     display_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size)),
-     choose_move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), 2, Move),
-     move(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, n, Size), Move, Temp),
+play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), u) :-
+     write('Entered\n'),
+     display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)),
+     write('game displayed\n'),
+     choose_move(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), _, Move),
+     move(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), Move, Temp),
      game_over(Temp, Winner),
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
@@ -690,6 +759,7 @@ valid_moves(game(Board, _, _, _, Turn, Size), ListOfMoves) :-
 
 %play()
 play :-
-     start_menu(Size, Mode),
-     initial_state(Size, game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)),
-     play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), u).
+     start_menu(Size, Mode, StartTurn),
+     initial_state(Size, game(Board, CapturedSamurai, CapturedNinjas, Mode, StartTurn, Size)),
+     write('Initial state set\n'),
+     play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, StartTurn, Size), u).
