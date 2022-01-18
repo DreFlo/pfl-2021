@@ -9,7 +9,7 @@
 
 Para instalar o jogo apenas é necessário fazer *consult* do ficheiro *shi.pl* no SICStus e executar o predicado *play*.
 
-## Descrição
+## Descrição do jogo
 
 <p>Shi é um jogo de <em>multiplayer</em> jogador num tabuleiro quadrado de lado variável, cada jogador começa com um número igual de peças (o número de peças e igual ao comprimento do lado) numa linha em lados opostos do tabuleiro. Os adversários chamam-se <em>Ninja</em> e <em>Samurai</em>, o jogador com a primeira jogada e definido antes da partida começar.</p>
 <p>O objetivo do jogo é capturar as peças do adversário até que este tenha metade das suas peças iniciais, quando tal é atingido o jogador vencerá a partida. Todas as peças no jogo são do mesmo tipo e podem mover-se em qualquer direção desde que não saltem nenhuma peça e o lugar de destino esteja livre. Para executar uma captura uma peça tem se saltar por outra de mesmo tipo que está colinear com a peça atacante e a peça alvo, peças só podem saltar quando estão a capturar.</p>
@@ -38,7 +38,7 @@ O predicado *game* contêm:
 - Turn - a vez do jogador.
 - Size - tamanho do lado do tabuleiro selecionado no menu inicial.
 
-### Display do Estado de Jogo
+### Visualização do Estado de Jogo
 
 **display_game(Game)**
 
@@ -52,13 +52,13 @@ Initializa o jogo com um tabuleiro de tamanho especificado em *Size*.
 
 Os inputs do utilizador são todos validados, através dos predicados **read_until_between**.
 
-### Jogada
+### Execução de Jogadas
 
 **move(+Game, +Move, -NewGame)**
 
 Validação de uma jogada passa pela verificação da sua presença na lista retornada por valid_moves. A execução altera a disposição do board, próximo jogador e o número de peças capturadas.
 
-### Fim de Jogo
+### Fim do Jogo
 
 **game_over(+Game, -Winner)**
 
@@ -105,10 +105,10 @@ Escolhe uma jogada aleatória da lista de jogadas válidas .
 Escolhe a primeria jogada que permite capturar uma peça do adversário, se não conseguir capturar nenhuma peça escolhe a última jogada válida.
 
 
-## Conclusão
+## Conclusões
 
 Com este trabalho podemos reconhecer o potencial do paradigma declarativo da linguagem PROLOG. Como possível melhoria ao jogo implementaríamos um bot greedy mais forte que tomasse em conta as consequências de uma jogada além de se captura ou não um peça (se a peça pode ser ou não capturada após a jogada ou se torna a captura de outra peça possível).
 
-## Bibliographia
+## Bibliografia
 
 [Descrição de Shi](https://boardgamegeek.com/boardgame/319861/shi)
