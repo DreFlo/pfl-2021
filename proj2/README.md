@@ -7,7 +7,7 @@
 
 ## Instalação e Execução
 
-Para instalar o jogo apenas é necessário fazer *consult* do ficheiro *shi.pl* no SICStus e executar o predicado *play*
+Para instalar o jogo apenas é necessário fazer *consult* do ficheiro *shi.pl* no SICStus e executar o predicado *play*.
 
 ## Descrição
 
@@ -62,7 +62,7 @@ Validação de uma jogada passa pela verificação da sua presença na lista ret
 
 **game_over(+Game, -Winner)**
 
-A verificação da situação de fim de jogo é dada pela captura de mais de metade das peças iniciais (definidas pelo utilizador), é feita após cada jogada e está incluída no ciclo de jogo.
+A verificação da situação de fim de jogo é dada pela captura de mais de metade das peças iniciais (definidas pelo utilizador), é feita após cada jogada e está incluída no ciclo de jogo. O empate é impossível uma vez que quando se captura mais de metade das peças a vitória é atribuída.
 
 ### Lista de Jogadas Válidas
 
