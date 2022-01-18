@@ -5,46 +5,66 @@
 | André Flores | 201907001 | 50% |
 | Sara Marinha | 201906805 | 50% |
 
-## Instalation and Execution
+## Instalação e Execução
 
-incluir todos os passos necessários para correta execução do jogo em ambientes Linux e Windows (para além da instalação do SICStus Prolog 4.7);
+Para instalar o jogo apenas é necessário fazer *consult* do ficheiro *shi.pl* no SICStus e executar o predicado *play*
 
-## Game Description
+## Descrição
 
-<p>Shi is a two-player game played in an 8x8 board, each player starting with 8 pieces in a line on opposite sides of the board. The two players' sides are called <em>Ninja</em> and <em>Samurai</em>, the <em>Samurai</em> side always gets the first move of the game.</p>
-<p>The goal of the game is to capture the other player's pieces until they only have 4, at which point they will lose. Each piece can move in any direction regardless of the distance as long as there isn't a piece already at the target position. To capture an opponent's piece a player must "jump" over another of their pieces that is colinear with the attacking and target piece and in between them, pieces are only able to jump when attacking.</p>
+<p>Shi é um jogo de <em>multiplayer</em> jogador num tabuleiro quadrado de lado variável, cada jogador começa com um número igual de peças (o número de peças e igual ao comprimento do lado) numa linha em lados opostos do tabuleiro. Os adversários chamam-se <em>Ninja</em> e <em>Samurai</em>, o jogador com a primeira jogada e definido antes da partida começar.</p>
+<p>O objetivo do jogo é capturar as peças do adversário até que este tenha metade das suas peças iniciais, quando tal é atingido o jogador vencerá a partida. Todas as peças no jogo são do mesmo tipo e podem mover-se em qualquer direção desde que não saltem nenhuma peça e o lugar de destino esteja livre. Para executar uma captura uma peça tem se saltar por outra de mesmo tipo que está colinear com a peça atacante e a peça alvo, peças só podem saltar quando estão a capturar.</p>
 <p><a href=https://boardgamegeek.com/boardgame/319861/shi>Source</a></p>
 
-## Game Logic
-descrever (não basta copiar código fonte) o projeto e implementação da lógica do jogo em Prolog. O predicado de início de jogo deve ser play/0. Esta secção deve ter informação sobre os seguintes tópicos (até 2400 palavras no total):
+## Lógica do Jogo
 
-TODO
+**play**
 
-### Internal representation of the game state 
+Trata-se do predicado que é responsável pelo início jogo, apresenta o menu do jogo, onde é possível selecionar o tamanho do tabuleiro e o modo de jogo, inicializa o jogo com as configurações selecionadas e invoca o ciclo de jogo.
 
-indicação de como representam o estado do jogo, incluindo tabuleiro (tipicamente usando lista de listas com diferentes átomos para as peças), jogador atual, e eventualmente peças capturadas e/ou ainda por jogar, ou outras informações que possam ser necessárias (dependendo do jogo). Deve incluir exemplos da representação em Prolog de estados de jogo inicial, intermédio e final, e indicação do significado de cada átomo (ie., como representam as diferentes peças).
+**play_game(Game, Winner)**
 
-TODO
+Predicado onde está implementado o ciclo de jogo, faz *display* ao tabuleiro ao jogo, consoante o modo recebe input dos jogadores ou dos bots implementados e executa a jogada. Por fim verifica a condição de final do jogo, troca a vez do jogador e chama-se recursivamente. 
 
-### Game state display
+### Representação Interna do Estado de Jogo 
 
-descrição da implementação do predicado de visualização do estado de jogo. Pode incluir informação sobre o sistema de menus criado, assim como interação com o utilizador, incluindo formas de validação de entrada. O predicado de visualização deverá chamar-se display_game(+GameState), recebendo o estado de jogo atual (que inclui o jogador que efetuará a próxima jogada). Serão valorizadas visualizações apelativas e intuitivas. Serão também valorizadas representações de estado de jogo e implementação de predicados de visualização flexíveis, por exemplo, funcionando para qualquer tamanho de tabuleiro, usando um predicado initial_state(+Size, -GameState) que recebe o tamanho do tabuleiro como argumento e devolve o estado inicial do jogo.
+**game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)**
 
-TODO
+O predicado *game* contêm:
 
-### Move Piece
+- Board - o tabuleiro de jogo, definido numa matriz-2D (lista de listas) de peças (**piece(Type, X, Y)** Type ∈ [s (samurai), n (ninja), b (blank)]).
+- CapturedSamurai - o número de peças samurai capturadas até ao momento
+- CapturedNinjas - o número de peças ninja capturadas até ao momento
+- Mode - o modo de jogo, selecionado no menu inicial.
+- Turn - a vez do jogador.
+- Size - tamanho do lado do tabuleiro selecionado no menu inicial.
+
+### Display do Estado de Jogo
+
+**display_game(Game)**
+
+Escreve na consola a vez, o modo de jogo, o número de peças capturadas por cada lado e o tabuleiro de jogo (através do predicado **display_board(Board, Size)** que escreve de modo legível na consola o tabuleiro de jogo).
+
+**initial_state(Size, Game)**
+
+Initializa o jogo com um tabuleiro de tamanho especificado em *Size*.
+
+#### Inputs
+
+Os inputs do utilizador são todos validados, através dos predicados **read_until_between**.
+
+### Jogada
 
 **move(+Game, +Move, -NewGame)**
 
 Validação de uma jogada passa pela verificação da sua presença na lista retornada por valid_moves. A execução altera a disposição do board, próximo jogador e o número de peças capturadas.
 
-### Game over
+### Fim de Jogo
 
 **game_over(+Game, -Winner)**
 
 A verificação da situação de fim de jogo é dada pela captura de mais de metade das peças iniciais (definidas pelo utilizador), é feita após cada jogada e está incluída no ciclo de jogo.
 
-### List of valid moves
+### Lista de Jogadas Válidas
 
 
 Obtenção de lista com jogadas possíveis. O predicado deve chamar-se .
@@ -56,10 +76,13 @@ A lista de jogadas válidas é criada com base na vez do jogador. Jogadas válid
 - Joga na horizontal, vertical ou diagonal em qualquer sentido para um lugar livre desde que não salte nenhuma peça
 - Exceção : se estiver a capturar tem de saltar por cima de uma peça do próprio tipo.
 
-(Imagem a demonstrar)
+![Estado inicial](images/move_1.png)
+![Jogada válida](images/move_2.png)
+![Jogada de captura](images/move_3.png)
 
+Exemplos do tabuleiro no estado inicial, jogada válida e jogada de captura.
 
-### Avaliation of game state
+### Avaliação do Estado de Jogo
 
 Forma(s) de avaliação do estado do jogo do ponto de vista de um jogador, quantificada através do predicado value(+GameState, +Player, -Value).
 
@@ -67,7 +90,7 @@ Forma(s) de avaliação do estado do jogo do ponto de vista de um jogador, qua
 
 A avaliação do estado do jogo é feita pelo número de peças capturadas pelo jogador especificado no Player.
 
-### AI implementation
+### Implementação de IA 
 
 Escolha da jogada a efetuar pelo computador, dependendo do nível de dificuldade, através de um predicado choose_move(+GameState, +Level, -Move). O nível 1 deverá devolver uma jogada válida aleatória. O nível 2 deverá devolver a melhor jogada no momento (algoritmo míope), tendo em conta a avaliação do estado de jogo.
 
@@ -82,10 +105,10 @@ Escolhe uma jogada aleatória da lista de jogadas válidas .
 Escolhe a primeria jogada que permite capturar uma peça do adversário, se não conseguir capturar nenhuma peça escolhe a última jogada válida.
 
 
-## Conclusion
+## Conclusão
 
-Conclusões do trabalho, incluindo limitações do trabalho desenvolvido (known issues), assim como possíveis melhorias identificadas (roadmap). (até 250 palavras)
+Com este trabalho podemos reconhecer o potencial do paradigma declarativo da linguagem PROLOG. Como possível melhoria ao jogo implementaríamos um bot greedy mais forte que tomasse em conta as consequências de uma jogada além de se captura ou não um peça (se a peça pode ser ou não capturada após a jogada ou se torna a captura de outra peça possível).
 
-## Bibliography
+## Bibliographia
 
-[Original description of Shi](https://boardgamegeek.com/boardgame/319861/shi)
+[Descrição de Shi](https://boardgamegeek.com/boardgame/319861/shi)

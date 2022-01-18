@@ -4,10 +4,6 @@ piece(Type, X, Y)
 Type - s - samurai
      - n - ninja
      - b - blank
-
-0 <= X <= 7
-
-0 <= Y <= 7
 */
 :- use_module(library(lists)).
 :- use_module(library(random)).
@@ -385,8 +381,8 @@ get_mode_and_turn_from_choice(10, random_ai_v_miopic_ai, n).
 start_menu(Size, Mode, StartTurn) :-
      repeat,
      format('# Menu\nInput board size: ', []),
-     read_number(Size),
-     write('# Write game mode\n1 - Human Samurai/Human Ninja\n2 - Human Ninja/ Human Samurai\n3 - Human Samurai/EASY AI Ninja\n4 - EASY AI Ninja/Human Samurai\n5 - Human Samurai/HARD AI Ninja\n6 - HARD AI Ninja/Human Samurai\n7 - EASY AI Samurai/EASY AI Ninja\n8 - HARD AI Samurai/HARD AI Ninja\n9 - EASY AI Samurai/HARD AI Ninja\n10-HARD AI Ninja/EASY AI Samurai\nChoice '),
+     read_until_between(3, 100, Size),
+     write('# Write game mode\n1 - Human Samurai/Human Ninja\n2 - Human Ninja/ Human Samurai\n3 - Human Samurai/EASY AI Ninja\n4 - EASY AI Ninja/Human Samurai\n5 - Human Samurai/HARD AI Ninja\n6 - HARD AI Ninja/Human Samurai\n7 - EASY AI Samurai/EASY AI Ninja\n8 - HARD AI Samurai/HARD AI Ninja\n9 - EASY AI Samurai/HARD AI Ninja\n10- HARD AI Ninja/EASY AI Samurai\nChoice '),
      read_until_between(1, 11, Choice),
      get_mode_and_turn_from_choice(Choice, Mode, StartTurn).
 
@@ -799,5 +795,4 @@ value(game(_, CapturedSamurai, _, _, _, _), n, CapturedSamurai).
 play :-
      start_menu(Size, Mode, StartTurn),
      initial_state(Size, game(Board, CapturedSamurai, CapturedNinjas, Mode, StartTurn, Size)),
-     write('Initial state set\n'),
      play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, StartTurn, Size), u).
