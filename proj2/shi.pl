@@ -12,49 +12,18 @@ Type - s - samurai
 :- use_module(library(lists)).
 :- use_module(library(random)).
 
-between(A, B, C) :-
-     A =< C,
-     C =< B.
-
-select_number(MaxNumber, ValidNumber) :-
-    repeat,
-    readMenuOption(OptionNumber),
-    validateMenuOption(OptionNumber, ValidNumber, MaxNumber), !.
-
-%readMenuOption(-Option)
-/*
-Reads menu option input code, ignoring newlines (ascii code 10)
-*/
-readMenuOption(Option) :-
-    write('  -> '),
-    get_code(Option),
-    Option\=10.
-
-%validateMenuOption(+OptionInput,-ValidOption,+NumOptions)
-/*
-Checks if the row input is valid by calculating it's index, converting ascii code to number, being the firt option 0
-the index has to be within 0 and the number of options
-the next char has to be newline (else 2 chars in input, thus failing)
-*/
-validateMenuOption(OptionInput, ValidOption, NumOptions) :-
-    peek_char('\n'),
-    ValidOption is OptionInput - 48,
-    between(0, NumOptions, ValidOption),
-    skip_line.
-
 % read_number(-X)
 read_number(X):-
-     skip_line,
-     read_number_aux(X,0).
+     read_number_aux(X, false,0).
 
-read_number_aux(X,Acc):- 
+read_number_aux(X,_,Acc):- 
      get_code(C),
      C >= 48,
      C =< 57,
      !,
      Acc1 is 10*Acc + (C - 48),
-     read_number_aux(X,Acc1).
-read_number_aux(X,X).
+     read_number_aux(X, true, Acc1).
+read_number_aux(X, true, X).
 
 % read_until_between(+Min, +Max, -Value)
 read_until_between(Min,Max,Value):-
@@ -409,15 +378,16 @@ get_mode_and_turn_from_choice(6, p_v_miopic_ai, n).
 get_mode_and_turn_from_choice(7, random_ai_v_random_ai, s).
 get_mode_and_turn_from_choice(8, miopic_ai_v_miopic_ai, s).
 get_mode_and_turn_from_choice(9, random_ai_v_miopic_ai, s).
+get_mode_and_turn_from_choice(10, random_ai_v_miopic_ai, n).
 
 % start_menu(-Size, -Mode, -StartTurn)
 % Present start menu
 start_menu(Size, Mode, StartTurn) :-
      repeat,
-     write('# Menu\nInput board size: '),
-     read(Size),
-     write('# Write game mode\n1 - S/N\n2 - N/S\n3 - S/EASY AI\n4 - EASY AI/S\n5 - S/HARD AI\n6 - HARD AI/S\n7 - EASY AI/EASY AI\n8 - HARD AI/HARD AI\n9 - EASY AI/HARD AI\nChoice '),
-     read(Choice),
+     format('# Menu\nInput board size: ', []),
+     read_number(Size),
+     write('# Write game mode\n1 - Human Samurai/Human Ninja\n2 - Human Ninja/ Human Samurai\n3 - Human Samurai/EASY AI Ninja\n4 - EASY AI Ninja/Human Samurai\n5 - Human Samurai/HARD AI Ninja\n6 - HARD AI Ninja/Human Samurai\n7 - EASY AI Samurai/EASY AI Ninja\n8 - HARD AI Samurai/HARD AI Ninja\n9 - EASY AI Samurai/HARD AI Ninja\n10-HARD AI Ninja/EASY AI Samurai\nChoice '),
+     read_until_between(1, 11, Choice),
      get_mode_and_turn_from_choice(Choice, Mode, StartTurn).
 
 % change_player(+Game, -NewGame)
@@ -454,12 +424,14 @@ choose_move(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, 
      valid_moves(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, n, Size), ListOfMoves),
      choose_move_miopic_helper(game(Board, CapturedSamurai, CapturedNinjas, random_ai_v_miopic_ai, n, Size), ListOfMoves, Move).
 
+input_move(X-Y) :-  get_char(X),skip_line, get_char(Y), skip_line, write(X), nl, write(Y), nl.
+
 % read_move_from_player(+GameState, -Move)
 % Get move input from player
 read_move_from_player(game(Board, _, _, _, Turn, Size), step(piece(Turn, X1, Y1), X2, Y2)) :-
      repeat,
      write('Input Piece to move. X '),
-     selectMenuOption(Size, X1),
+     read_until_between(0, Size, X1),
      write('Y '),
      read_until_between(0, Size, Y1),
      write('To X '),
@@ -500,9 +472,7 @@ play_game(game(Board, CapturedSamurai, CapturedNinjas, p_v_miopic_ai, s, Size), 
      change_player(Temp, NewGame),
      play_game(NewGame, Winner).
 play_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), u) :-
-     write('Entered\n'),
      display_game(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size)),
-     write('game displayed\n'),
      choose_move(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), _, Move),
      move(game(Board, CapturedSamurai, CapturedNinjas, Mode, Turn, Size), Move, Temp),
      game_over(Temp, Winner),
@@ -818,6 +788,11 @@ go_through_board([Row | Tail], Board, Turn, Size, ListOfMoves) :-
 valid_moves(game(Board, _, _, _, Turn, Size), ListOfMoves) :-
      go_through_board(Board, Board, Turn, Size, ListOfMoves),
      !.
+
+% value(+Game, +Player, -Value)
+% Get game state value for player (the number of pieces they've capture)
+value(game(_, _, CapturedNinjas, _, _, _), s, CapturedNinjas).
+value(game(_, CapturedSamurai, _, _, _, _), n, CapturedSamurai).
 
 %play()
 % Play game
